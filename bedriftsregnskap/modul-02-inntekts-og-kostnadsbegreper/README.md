@@ -1,7 +1,7 @@
 # Modul 2: Inntekts- og kostnadsbegreper
 
 ## Materiell
-- [ ] 2. Inntekts- og kostnadsbegreper.pdf
+- [ ] 2\. Inntekts- og kostnadsbegreper.pdf
 - [ ] Video 1: Utgift, kostnad og utbetaling – del 1
 - [ ] Video 2: Utgift, kostnad og utbetaling – del 2 (kun 1–7 min)
 - [ ] Video 3: Gruppering av kostnader – del 1
