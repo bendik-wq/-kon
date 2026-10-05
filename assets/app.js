@@ -24,6 +24,8 @@
     down: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10"/></svg>',
     search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
     sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>',
+    excel: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="2.5"/><path d="M2 6.5h12M2 10.5h12M6.5 2v12"/></svg>',
+    check: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 8.5 3 3 6-7"/></svg>',
     moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/></svg>',
   };
 
@@ -35,6 +37,7 @@
   const SECTION_TO_SHEET = { 1: 1, 2: 2, 3: 2, 4: 2, 5: 3, 6: 4, 7: 5, 8: 6, 9: 6, 10: 7 };
   const HF_URL = 'https://cdn.jsdelivr.net/npm/hyperformula@3.4.0/dist/hyperformula.full.min.js';
   const XLSX_URL = 'eksempler/HSM122_eksempeloppgaver.xlsx';
+  const JSZIP_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
 
   /* ---------- Smooth scroll ---------- */
   let lenis = null;
@@ -238,7 +241,9 @@
       });
       if (num) formulaCount += $$('tbody tr', card).length + $$('pre', card).length;
       if (num && SECTION_TO_SHEET[num]) {
-        card.insertAdjacentHTML('beforeend', `<div class="card-foot"><a class="link-arrow" href="#oppgave-${SECTION_TO_SHEET[num]}">Regn eksempeloppgave ${ICON.arrow}</a></div>`);
+        card.insertAdjacentHTML('beforeend', `<div class="card-foot">
+          <button class="link-arrow" type="button" data-xl-sheet="${SECTION_TO_SHEET[num]}">${ICON.excel} Åpne i Excel</button>
+          <a class="link-arrow" href="#oppgave-${SECTION_TO_SHEET[num]}">Regn eksempeloppgave ${ICON.arrow}</a></div>`);
       }
       cards.push(card);
     });
@@ -438,6 +443,7 @@
     }
     reveal($$('.card', host));
     engineStatus();
+    watchDock();
   }
 
   function taskHTML(text) {
@@ -458,6 +464,7 @@
         <div class="sheet-tools">
           <span class="engine" id="engine"><i></i><span></span></span>
           <button class="btn ghost small" id="reset" type="button">Tilbakestill</button>
+          <button class="btn small" type="button" data-xl>${ICON.excel} Åpne i Excel</button>
         </div>
       </div>
       <div class="stack">
@@ -512,7 +519,7 @@
         const c = row.cells[i];
         if (!c) return `<td class="${colCls(i)}"></td>`;
         if (c.role === 'input') {
-          const v = s.cache[c.r][c.c];
+          const v = valueAt(s, c.r, c.c); // keeps edits when switching sheets
           const unit = inputUnit(c.fmt);
           return `<td class="r"><label class="field"><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false"
             data-cell="${c.r}:${c.c}" data-fmt="${esc(c.fmt || '')}" value="${esc(inputText(v, c.fmt))}"
@@ -719,6 +726,155 @@
   }
 
   /* ======================================================================
+     Push to Excel – builds a real .xlsx of one task with the viewer's numbers
+     ====================================================================== */
+  let xlsxBuf = null;
+  const xlsxBuffer = () => (xlsxBuf ||= fetch(XLSX_URL).then(r => {
+    if (!r.ok) throw new Error(XLSX_URL + ': ' + r.status);
+    return r.arrayBuffer();
+  }));
+  const ensureZip = async () => { if (!window.JSZip) await loadScript(JSZIP_URL); return window.JSZip; };
+  const colIndex = letters => [...letters].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0) - 1;
+  function inputSet(s) {
+    if (!s._inputs) {
+      s._inputs = new Set();
+      s.blocks.forEach(b => b.parts.forEach(p => (p.rows || []).forEach(r => (r.cells || []).forEach(c => {
+        if (c && c.role === 'input') s._inputs.add(c.r + ':' + c.c);
+      }))));
+    }
+    return s._inputs;
+  }
+
+  // Write the engine's current inputs and results into the sheet XML, so the file
+  // shows the right numbers even in Excel's Protected View (before recalculation).
+  function patchSheetXml(xml, s) {
+    const doc = new DOMParser().parseFromString(xml, 'application/xml');
+    const ns = doc.documentElement.namespaceURI;
+    const id = sheetIds[s.name];
+    const inputs = inputSet(s);
+    [...doc.getElementsByTagNameNS(ns, 'c')].forEach(c => {
+      const m = /^([A-Z]+)(\d+)$/.exec(c.getAttribute('r') || '');
+      if (!m) return;
+      const row = +m[2] - 1, col = colIndex(m[1]);
+      const isFormula = c.getElementsByTagNameNS(ns, 'f').length > 0;
+      if (!isFormula && !inputs.has(row + ':' + col)) return;
+      const v = HF.getCellValue({ sheet: id, row, col });
+      let vEl = c.getElementsByTagNameNS(ns, 'v')[0];
+      if (!vEl) { vEl = doc.createElementNS(ns, 'v'); c.appendChild(vEl); }
+      if (typeof v === 'number') { c.removeAttribute('t'); vEl.textContent = String(v); }
+      else if (typeof v === 'boolean') { c.setAttribute('t', 'b'); vEl.textContent = v ? '1' : '0'; }
+      else if (v && typeof v === 'object') { c.setAttribute('t', 'e'); vEl.textContent = v.value || '#VALUE!'; }
+      else { c.setAttribute('t', 'str'); vEl.textContent = v ?? ''; }
+    });
+    const out = new XMLSerializer().serializeToString(doc);
+    return out.startsWith('<?xml') ? out : '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' + out;
+  }
+
+  async function buildWorkbook(idx) {
+    const d = await loadData();
+    const s = d.sheets[idx];
+    const [JSZip, buf] = await Promise.all([ensureZip(), xlsxBuffer()]);
+    const zip = await JSZip.loadAsync(buf);
+    const wbXml = await zip.file('xl/workbook.xml').async('string');
+    const relXml = await zip.file('xl/_rels/workbook.xml.rels').async('string');
+    const parser = new DOMParser();
+    const sheetEls = [...parser.parseFromString(wbXml, 'application/xml').getElementsByTagName('sheet')];
+    const targets = {};
+    [...parser.parseFromString(relXml, 'application/xml').getElementsByTagName('Relationship')]
+      .forEach(r => { targets[r.getAttribute('Id')] = r.getAttribute('Target'); });
+    const pathOf = el => {
+      const t = targets[el.getAttribute('r:id')].replace(/^\//, '');
+      return t.startsWith('xl/') ? t : 'xl/' + t;
+    };
+    const pos = sheetEls.findIndex(el => el.getAttribute('name') === s.name);
+
+    // Open on this task's sheet and recalculate everything when Excel loads it
+    let wb = wbXml.replace(/<workbookView\b([^>]*?)(\/?)>/, (m, attrs, slash) =>
+      `<workbookView${attrs.replace(/\s(activeTab|firstSheet)="\d+"/g, '')} activeTab="${pos}"${slash}>`);
+    wb = /<calcPr\b/.test(wb)
+      ? wb.replace(/<calcPr\b([^>]*?)(\/?)>/, (m, attrs, slash) => `<calcPr${attrs.replace(/\sfullCalcOnLoad="\w+"/, '')} fullCalcOnLoad="1"${slash}>`)
+      : wb.replace('</workbook>', '<calcPr fullCalcOnLoad="1"/></workbook>');
+    zip.file('xl/workbook.xml', wb);
+
+    for (const [i, el] of sheetEls.entries()) {
+      const p = pathOf(el);
+      let xml = await zip.file(p).async('string');
+      xml = xml.replace(/\stabSelected="1"/g, '');
+      if (i === pos) {
+        xml = xml.replace(/<sheetView\b/, '<sheetView tabSelected="1"');
+        if (HF) xml = patchSheetXml(xml, s);
+      }
+      zip.file(p, xml);
+    }
+    const blob = await zip.generateAsync({
+      type: 'blob', compression: 'DEFLATE',
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const name = `HSM122 - ${s.name}`.replace(/[\\/:*?"<>|]+/g, '').trim() + '.xlsx';
+    return { blob, name, sheet: s };
+  }
+  window.__buildWorkbook = buildWorkbook; // used for testing the export
+
+  async function exportSheet(idx, btn) {
+    if (btn) btn.classList.add('busy');
+    try {
+      const { blob, name, sheet } = await buildWorkbook(idx);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      const edited = HF && [...inputSet(sheet)].some(k => {
+        const [r, c] = k.split(':').map(Number);
+        return HF.getCellValue({ sheet: sheetIds[sheet.name], row: r, col: c }) !== sheet.grid[r][c];
+      });
+      toast(`${name}`, edited ? 'Lastet ned med tallene dine – åpne filen for å fortsette i Excel.' : 'Lastet ned – åpne filen for å fortsette i Excel.');
+    } catch (err) {
+      console.error(err);
+      toast('Kunne ikke lage Excel-filen', 'Prøv igjen, eller last ned hele arbeidsboken fra forsiden.', true);
+    } finally {
+      if (btn) btn.classList.remove('busy');
+    }
+  }
+
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-xl], [data-xl-sheet]');
+    if (!b) return;
+    e.preventDefault();
+    exportSheet(b.dataset.xlSheet ? +b.dataset.xlSheet - 1 : curSheet, b);
+  });
+
+  /* ---------- Toast ---------- */
+  let toastEl = null, toastTimer = 0;
+  function toast(title, text, error) {
+    if (!toastEl) { toastEl = document.createElement('div'); toastEl.className = 'toast'; toastEl.setAttribute('role', 'status'); document.body.appendChild(toastEl); }
+    toastEl.classList.toggle('err', !!error);
+    toastEl.innerHTML = `<span class="ic">${error ? '!' : ICON.check}</span><div><b>${esc(title)}</b><span>${esc(text)}</span></div>`;
+    toastEl.classList.remove('on'); void toastEl.offsetWidth; toastEl.classList.add('on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('on'), 5200);
+  }
+
+  /* ---------- Floating "Åpne i Excel" dock on the Oppgaver view ---------- */
+  const dock = document.createElement('div');
+  dock.className = 'xl-dock';
+  dock.innerHTML = `<button class="btn" type="button" data-xl>${ICON.excel}<span>Åpne i Excel</span></button>`;
+  document.body.appendChild(dock);
+  let dockIO = null;
+  function watchDock() {
+    if (dockIO) dockIO.disconnect();
+    dock.classList.remove('on');
+    const head = $('#sheet .sheet-head');
+    if (!head || !('IntersectionObserver' in window)) return;
+    const s = DATA.sheets[curSheet];
+    const [, ...rest] = s.title.split(/\s{2,}/);
+    $('span', dock).textContent = `Åpne «${rest.join(' ')}» i Excel`;
+    dockIO = new IntersectionObserver(([e]) => dock.classList.toggle('on', !e.isIntersecting && e.boundingClientRect.top < 0), { threshold: 0 });
+    dockIO.observe(head);
+  }
+  function hideDock() { if (dockIO) dockIO.disconnect(); dock.classList.remove('on'); }
+
+  /* ======================================================================
      View: Moduler
      ====================================================================== */
   const countTasks = src => (src.match(/^\s*- \[[ xX]\]/gm) || []).length;
@@ -838,6 +994,7 @@
     const view = parse(location.hash.slice(1));
     setTab(view.tab);
     tip().classList.remove('on');
+    if (view.tab !== 'oppgaver') hideDock();
 
     if (view.tab === 'oppgaver' && current.tab === 'oppgaver' && DATA && $('#seg')) {
       current = view;
