@@ -68,6 +68,12 @@ main{max-width:1080px;margin:0 auto;padding:0 16px 120px}
 .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 .hero p.lead{font-size:clamp(17px,2.2vw,22px);color:var(--muted);max-width:640px;margin:18px auto 0;font-weight:500;letter-spacing:-.015em}
 
+.cta{margin-top:28px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;font-size:17px;font-weight:500;
+  padding:12px 24px;border-radius:999px;transition:transform .2s,filter .2s}
+.btn:hover{text-decoration:none;filter:brightness(1.08);transform:scale(1.02)}
+.cta-note{font-size:13px;color:var(--faint)}
+
 /* Search */
 .search-wrap{position:sticky;top:52px;z-index:40;padding:14px 0 10px;background:linear-gradient(var(--bg) 70%,transparent)}
 .search{position:relative;max-width:640px;margin:0 auto}
@@ -268,6 +274,10 @@ async function renderFormler() {
       <p class="eyebrow">HSM122 · Innføring i bedriftsøkonomi</p>
       <h1>Alle formlene.<br><span class="grad">Ett sted.</span></h1>
       <p class="lead">Hele formelarket, ordnet etter tema – fra avanse og avskrivninger til standardkost og ABC.</p>
+      <div class="cta">
+        <a class="btn" href="eksempler/HSM122_eksempeloppgaver.xlsx" download>Last ned eksempeloppgaver</a>
+        <span class="cta-note">Excel · løste oppgaver for alle 10 temaene</span>
+      </div>
     </section>
     <div class="search-wrap">
       <div class="search">

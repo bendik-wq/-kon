@@ -14,6 +14,7 @@ bedriftsregnskap/
     losninger/    – løsningsforslag / egne løsninger
     materiell/    – kurs-PDF-er (lagres lokalt, ignoreres av git)
 formelark.md      – offisielt HSM122-formelark, ordnet etter tema
+eksempler/       – løste eksempeloppgaver i Excel
 maler/            – maler for nye moduler og notater
 ```
 
@@ -35,3 +36,8 @@ maler/            – maler for nye moduler og notater
 Repoet er også en nettside (GitHub Pages): **https://bendik-wq.github.io/-kon/**
 `index.html` leser `formelark.md` og modulmappene direkte, så det holder å oppdatere markdown-filene.
 Lokalt: `python -m http.server` i mappen og åpne http://localhost:8000.
+
+## Eksempeloppgaver (Excel)
+
+[`eksempler/HSM122_eksempeloppgaver.xlsx`](eksempler/HSM122_eksempeloppgaver.xlsx) har ett ark per tema i formelarket med oppgavetekst, inndata og løsning.
+Alle svar er Excel-formler: endre de blå/gule inndatacellene, så regnes svarene ut på nytt.
