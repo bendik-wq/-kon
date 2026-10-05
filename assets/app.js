@@ -485,7 +485,7 @@
     $$('figure.chart', frag).forEach(fig => {
       const part = s.blocks[+fig.dataset.b].parts[+fig.dataset.p];
       fig._draw = () => drawChart(fig, part, s);
-      requestAnimationFrame(fig._draw);
+      setTimeout(fig._draw, 0); // after the sheet is attached to the page
     });
     return frag;
   }
