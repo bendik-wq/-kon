@@ -29,3 +29,9 @@ maler/            – maler for nye moduler og notater
 |---|-------|--------|
 | 1 | [Introduksjon](bedriftsregnskap/modul-01-introduksjon/) | ☐ |
 | 2 | [Inntekts- og kostnadsbegreper](bedriftsregnskap/modul-02-inntekts-og-kostnadsbegreper/) | ☐ |
+
+## Nettside
+
+Repoet er også en nettside (GitHub Pages): **https://bendik-wq.github.io/-kon/**
+`index.html` leser `formelark.md` og modulmappene direkte, så det holder å oppdatere markdown-filene.
+Lokalt: `python -m http.server` i mappen og åpne http://localhost:8000.

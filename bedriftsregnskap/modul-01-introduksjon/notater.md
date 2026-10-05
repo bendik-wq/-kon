@@ -1,11 +1,12 @@
 # Notater – Modul 1
 
 ## Video / kilde:
-**Hovedpoeng**
--
 
-**Eksempel**
--
+### Hovedpoeng
+- 
 
-**Uklart / må repeteres**
--
+### Eksempel
+- 
+
+### Uklart / må repeteres
+- 
