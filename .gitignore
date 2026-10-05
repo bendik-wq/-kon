@@ -1,0 +1,11 @@
+# Kursmateriell (PDF-er, videoer) er opphavsrettsbeskyttet – holdes lokalt, ikke i repoet
+**/materiell/*
+!**/materiell/.gitkeep
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+~$*
+.vscode/
+.idea/
