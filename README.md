@@ -1,4 +1,4 @@
-# Økonomi – Bedriftsregnskap
+# Økonomi – HSM122 Innføring i bedriftsøkonomi
 
 Samlet studiemappe for bedriftsøkonomi / bedriftsregnskap: notater, oppgaver, løsninger og formelark per modul.
 
@@ -13,7 +13,7 @@ bedriftsregnskap/
     oppgaver/     – oppgaver du løser (egne filer, regneark osv.)
     losninger/    – løsningsforslag / egne løsninger
     materiell/    – kurs-PDF-er (lagres lokalt, ignoreres av git)
-formelark.md      – alle formler samlet
+formelark.md      – offisielt HSM122-formelark, ordnet etter tema
 maler/            – maler for nye moduler og notater
 ```
 

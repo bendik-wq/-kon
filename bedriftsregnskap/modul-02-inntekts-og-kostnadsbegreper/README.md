@@ -32,6 +32,7 @@ Tilsvarende på inntektssiden: **inntekt** (opptjent/levert) – **innbetaling**
 ## Materialkostnad / varekostnad
 ```
 Varekostnad = IB varelager + varekjøp − UB varelager
+Varekostnad = varekjøp ± beholdningsendring
 ```
 
 ## Lønnskostnader
@@ -43,8 +44,9 @@ AGA          = sats (sone I: 14,1 %) × (lønn + feriepenger)
 
 ## Avskrivninger
 ```
-Lineær:  årlig avskrivning = (anskaffelseskost − utrangeringsverdi) / levetid
-Saldo:   avskrivning = sats × inngående saldo
+Lineær:        årlig avskrivning = (anskaffelseskost − restverdi) / levetid
+Saldo:         årlig avskrivning = saldo (bokført) per 1.1 × saldosats
+Bokført verdi = anskaffelseskost − påløpte avskrivninger og nedskrivninger
 ```
 
 ## Merverdiavgift (MVA)
@@ -55,6 +57,9 @@ Saldo:   avskrivning = sats × inngående saldo
 Pris inkl. MVA = pris ekskl. × (1 + sats)
 MVA-andel av pris inkl. = sats / (1 + sats)   (25 % → 20 %)
 ```
+
+## Se også
+- [Formelark](../../formelark.md) – §1 Kostnadsbegreper
 
 ## Spørsmål til forelesning
 -
